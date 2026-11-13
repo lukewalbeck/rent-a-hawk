@@ -331,7 +331,7 @@ def main():
         sys.exit(1)
 
     if args.test_notify:
-        send(args, topic, "🏠 Craigslist watcher test",
+        send(args, topic, "Craigslist watcher test",
              "If you can read this, notifications work. You'll get new matching SF listings here.",
              tags=["house"])
         return
@@ -365,7 +365,7 @@ def main():
     if first_run and not args.notify_existing:
         for it in items:
             state["seen"][listing_key(it["url"])] = now_iso()
-        send(args, topic, "🏠 Craigslist watcher is live",
+        send(args, topic, "Craigslist watcher is live",
              f"Tracking {len(items)} current posts. You'll get a push when a new one matches "
              f"(1–2 bd, ≤${TARGET_PRICE:,} target, {MIN_SQFT}+ sq ft, in-unit W/D, parking).",
              tags=["house"], priority=3)
