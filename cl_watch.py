@@ -1,0 +1,418 @@
+#!/usr/bin/env python3
+"""
+Craigslist SF apartment watcher -> free push notifications via ntfy.sh
+
+Every run:
+  1. Loads your filtered Craigslist search (newest first).
+  2. Skips posts it has already seen (seen.json).
+  3. Opens each NEW post and checks it against your must-haves
+     (neighborhood, sq ft, in-unit laundry, real parking).
+  4. Pushes matches to your phone, with flags for things to ask about
+     (parking fee, no dishwasher, possible scam, over target price).
+
+Usage:
+  python cl_watch.py                 # normal run (used by GitHub Actions)
+  python cl_watch.py --dry-run       # print matches, don't notify or save
+  python cl_watch.py --test-notify   # send one test push to check your phone
+  python cl_watch.py --notify-existing  # first run: alert on current listings too
+"""
+import argparse
+import json
+import os
+import random
+import re
+import sys
+import time
+from datetime import datetime, timezone
+from pathlib import Path
+from urllib.parse import urlencode, urljoin
+
+import requests
+from bs4 import BeautifulSoup
+
+# ============================================================
+# YOUR SEARCH — edit these
+# ============================================================
+SEARCH_BASE = "https://sfbay.craigslist.org/search/sfc/apa"
+SEARCH_PARAMS = [
+    ("min_bedrooms", "1"),
+    ("max_bedrooms", "2"),
+    ("max_price", "5800"),   # hard cap; a little over target so you can negotiate
+    ("laundry", "1"),        # w/d in unit (Craigslist tag; re-checked below)
+    ("parking", "2"),        # attached garage
+    ("parking", "3"),        # detached garage
+    ("parking", "4"),        # off-street parking
+    ("sort", "date"),        # newest first
+]
+TARGET_PRICE = 5500          # flag anything above this
+MIN_SQFT = 750               # reject if listed smaller; flag if not listed
+
+# Matched against the post's neighborhood label, title and opening text.
+NEIGHBORHOODS = [
+    "marina", "cow hollow",
+    "pacific heights", "pac heights", "pac hts", "lower pac",
+    "presidio heights", "presidio hts", "laurel heights", "laurel hts",
+    "lake st", "jordan park",
+    "inner richmond",
+    "russian hill", "north beach", "telegraph hill",
+]
+GENERIC_HOODS = {"", "san francisco", "sf", "city of san francisco", "san francisco, ca"}
+
+MAX_DETAIL_FETCHES = 25      # per run, to stay polite; leftovers go next run
+STATE_FILE = Path(__file__).with_name("seen.json")
+NTFY_SERVER = os.environ.get("NTFY_SERVER", "https://ntfy.sh")
+# ============================================================
+
+UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
+      "(KHTML, like Gecko) Chrome/130.0 Safari/537.36")
+SESSION = requests.Session()
+SESSION.headers.update({"User-Agent": UA, "Accept-Language": "en-US,en;q=0.9"})
+
+IN_UNIT = ["w/d in unit", "washer/dryer in unit", "washer & dryer in unit",
+           "washer and dryer in unit", "in-unit laundry", "in unit laundry",
+           "laundry in unit", "in-unit washer", "in unit washer",
+           "washer/dryer in the unit", "in-unit w/d", "in unit w/d"]
+SHARED_LAUNDRY = ["laundry on site", "laundry on-site", "on-site laundry", "onsite laundry",
+                  "laundry in bldg", "laundry in building", "shared laundry",
+                  "coin laundry", "coin-op", "laundry room"]
+REAL_PARKING = ["attached garage", "detached garage", "off-street parking", "garage parking",
+                "parking included", "1 car parking", "one-car parking", "one car parking",
+                "parking space", "parking spot", "carport", "garage"]
+DELETED = ["this posting has been deleted", "this posting has expired",
+           "this posting has been flagged for removal", "posting not found"]
+SCAM_PHRASES = ["wire transfer", "western union", "moneygram", "zelle", "cashapp", "cash app",
+                "out of the country", "out of town", "out of state", "missionary",
+                "deposit to hold", "deposit before", "before viewing", "before the viewing",
+                "keys will be mailed", "keys mailed", "god bless", "airbnb will handle"]
+ADDRESS_RE = re.compile(
+    r"\b\d{2,5}[A-Za-z]?\s+(?:[A-Z][a-z]+\s){0,3}(?:St|Street|Ave|Avenue|Blvd|Boulevard|"
+    r"Way|Ter|Terrace|Pl|Place|Ct|Court|Dr|Drive|Ln|Lane|Rd|Road)\b")
+
+
+def now_iso():
+    return datetime.now(timezone.utc).isoformat(timespec="seconds")
+
+
+def get(url, tries=2):
+    for attempt in range(tries):
+        try:
+            r = SESSION.get(url, timeout=20)
+            return r
+        except requests.RequestException as e:
+            if attempt == tries - 1:
+                print(f"  ! request failed: {url}: {e}", file=sys.stderr)
+            time.sleep(3)
+    return None
+
+
+def parse_price(text):
+    m = re.search(r"\$\s?([\d,]{3,7})", text or "")
+    return int(m.group(1).replace(",", "")) if m else None
+
+
+def listing_key(url):
+    last = url.split("?")[0].rstrip("/").split("/")[-1]
+    return last[:-5] if last.endswith(".html") else last
+
+
+# ---------------- search page ----------------
+def parse_search(html, base_url):
+    soup = BeautifulSoup(html, "html.parser")
+    items, seen_urls = [], set()
+
+    for li in soup.select("li.cl-static-search-result"):
+        a = li.find("a", href=True)
+        if not a:
+            continue
+        url = urljoin(base_url, a["href"])
+        if url in seen_urls:
+            continue
+        seen_urls.add(url)
+        price_el = li.select_one(".price")
+        loc_el = li.select_one(".location")
+        title = li.get("title") or (li.select_one(".title") or a).get_text(" ", strip=True)
+        items.append({
+            "url": url,
+            "title": title.strip(),
+            "price": parse_price(price_el.get_text() if price_el else ""),
+            "hood": loc_el.get_text(" ", strip=True).lower() if loc_el else "",
+        })
+
+    if not items:  # fallback if Craigslist changes its markup
+        for a in soup.find_all("a", href=True):
+            h = a["href"]
+            if "/view/d/" in h or re.search(r"/apa/d/.+\.html", h):
+                url = urljoin(base_url, h)
+                if url in seen_urls:
+                    continue
+                seen_urls.add(url)
+                text = a.get_text(" ", strip=True)
+                items.append({"url": url, "title": text, "price": parse_price(text), "hood": ""})
+    return items
+
+
+# ---------------- listing page ----------------
+def check_listing(url):
+    """Return dict with details + verdict, or None if it couldn't be fetched."""
+    r = get(url)
+    if r is None or r.status_code >= 500:
+        return None
+    if r.status_code == 404:
+        return {"gone": True}
+    soup = BeautifulSoup(r.text, "html.parser")
+    full = soup.get_text(" ", strip=True)
+    low = full.lower()
+    if any(p in low for p in DELETED):
+        return {"gone": True}
+
+    header_el = soup.select_one("h1") or soup.select_one(".postingtitle")
+    header = header_el.get_text(" ", strip=True) if header_el else ""
+    page_title = soup.title.get_text(strip=True) if soup.title else ""
+    body_el = soup.select_one("#postingbody") or soup.select_one(".body")
+    body = body_el.get_text(" ", strip=True) if body_el else ""
+    body = body.replace("QR Code Link to This Post", "").strip()
+    attrs = " ".join(e.get_text(" ", strip=True)
+                     for e in soup.select(".attrgroup, .mapAndAttrs, .attr, .attrs"))
+    addr_el = soup.select_one(".mapaddress") or soup.select_one(".address")
+    address = addr_el.get_text(" ", strip=True) if addr_el else ""
+
+    hood = ""
+    m = re.search(r"\(([^()]{3,60})\)\s*$", header) or re.search(r"\(([^()]{3,60})\)", header)
+    if m:
+        hood = m.group(1).strip().lower()
+
+    sqft = None
+    m = re.search(r"(\d{3,5})\s*(?:ft2|ft²|sq\.?\s?ft|sqft|square\s+feet)", (header + " " + attrs + " " + body).lower())
+    if m:
+        sqft = int(m.group(1))
+
+    beds = None
+    m = re.search(r"(\d)\s*(?:br|bd|bed)", (header + " " + attrs).lower())
+    if m:
+        beds = int(m.group(1))
+
+    return {
+        "gone": False,
+        "header": header or page_title,
+        "hood": hood,
+        "price": parse_price(header) or parse_price(page_title),
+        "sqft": sqft,
+        "beds": beds,
+        "body": body,
+        "attrs": attrs.lower(),
+        "address": address,
+        "text": low,
+    }
+
+
+def evaluate(item, d):
+    """Return (keep: bool, reasons_rejected: list, flags: list)."""
+    reject, flags = [], []
+    text = d["text"]
+    body_low = d["body"].lower()
+    hood = d["hood"] or item.get("hood", "")
+    price = d["price"] or item.get("price")
+
+    # Neighborhood
+    if any(n in hood for n in NEIGHBORHOODS):
+        pass
+    elif hood.strip() in GENERIC_HOODS or not hood:
+        blob = (item.get("title", "") + " " + d["header"] + " " + body_low[:400]).lower()
+        if any(n in blob for n in NEIGHBORHOODS):
+            flags.append("neighborhood from description; confirm")
+        else:
+            reject.append(f"neighborhood '{hood or 'unknown'}'")
+    else:
+        reject.append(f"neighborhood '{hood}'")
+
+    # Size
+    if d["sqft"] is not None and d["sqft"] < MIN_SQFT:
+        reject.append(f"{d['sqft']} sq ft")
+    elif d["sqft"] is None:
+        flags.append("sq ft not listed")
+
+    # Laundry (in-unit is a must-have)
+    if any(k in text for k in IN_UNIT):
+        pass
+    elif any(k in text for k in SHARED_LAUNDRY):
+        reject.append("shared laundry")
+    else:
+        flags.append("laundry unclear")
+
+    # Parking (real parking is a must-have)
+    has_parking = any(k in text for k in REAL_PARKING)
+    street_only = "street parking" in text and not has_parking
+    if street_only or ("no parking" in text and not has_parking):
+        reject.append("street parking only")
+    elif not has_parking:
+        flags.append("parking unclear")
+    if re.search(r"parking[^.\n]{0,60}\$\s?\d{2,3}\b", text) or \
+       re.search(r"\$\s?\d{2,3}\b[^.\n]{0,40}parking", text) or \
+       re.search(r"parking[^.\n]{0,40}(additional|extra|separate)", text):
+        flags.append("parking may cost extra")
+
+    # Nice-to-haves / context
+    if "dishwasher" not in text:
+        flags.append("no dishwasher mentioned")
+    if "rent ordinance" in text or "rent control" in text or "rent-controlled" in text:
+        flags.append("rent-controlled ✅")
+    if price and price > TARGET_PRICE:
+        flags.append(f"over ${TARGET_PRICE:,} target")
+
+    # Scam signals (flag, don't hide)
+    scam = []
+    if len(d["body"]) < 200:
+        scam.append("very short description")
+    hits = [p for p in SCAM_PHRASES if p in body_low]
+    if hits:
+        scam.append("mentions " + ", ".join(hits[:3]))
+    beds = d["beds"]
+    if price and ((beds and beds >= 2 and price < 4000) or (beds == 1 and price < 3000)):
+        scam.append("price unusually low")
+    if not d["address"] and not ADDRESS_RE.search(d["header"] + " " + d["body"]):
+        scam.append("no address")
+    if len(scam) >= 2 or any(s.startswith("mentions") for s in scam):
+        flags.append("⚠️ possible scam: " + "; ".join(scam))
+
+    return (not reject), reject, flags
+
+
+# ---------------- notifications ----------------
+def notify(topic, title, message, url=None, tags=None, priority=4):
+    payload = {"topic": topic, "title": title[:250], "message": message,
+               "priority": priority, "tags": tags or []}
+    if url:
+        payload["click"] = url
+        payload["actions"] = [{"action": "view", "label": "Open listing", "url": url}]
+    r = requests.post(NTFY_SERVER, json=payload, timeout=15)
+    r.raise_for_status()
+
+
+def send(args, topic, title, message, url=None, tags=None, priority=4):
+    if args.dry_run or not topic:
+        print(f"\n[NOTIFY] {title}\n{message}\n{url or ''}")
+        return
+    try:
+        notify(topic, title, message, url, tags, priority)
+    except requests.RequestException as e:
+        print(f"  ! ntfy failed: {e}", file=sys.stderr)
+
+
+# ---------------- state ----------------
+def load_state():
+    try:
+        s = json.loads(STATE_FILE.read_text())
+        s.setdefault("seen", {})
+        s.setdefault("blocked_alerted", False)
+        return s
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {"seen": {}, "blocked_alerted": False}
+
+
+def save_state(state):
+    seen = state["seen"]
+    if len(seen) > 3000:  # keep the newest 3000
+        keep = sorted(seen.items(), key=lambda kv: kv[1], reverse=True)[:3000]
+        state["seen"] = dict(keep)
+    STATE_FILE.write_text(json.dumps(state, indent=1, sort_keys=True) + "\n")
+
+
+# ---------------- main ----------------
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--test-notify", action="store_true")
+    ap.add_argument("--notify-existing", action="store_true")
+    args = ap.parse_args()
+
+    topic = os.environ.get("NTFY_TOPIC", "").strip()
+    if not topic and not args.dry_run:
+        print("NTFY_TOPIC is not set (add it as a GitHub secret). Use --dry-run to test locally.")
+        sys.exit(1)
+
+    if args.test_notify:
+        send(args, topic, "🏠 Craigslist watcher test",
+             "If you can read this, notifications work. You'll get new matching SF listings here.",
+             tags=["house"])
+        return
+
+    state = load_state()
+    first_run = not state["seen"]
+
+    search_url = f"{SEARCH_BASE}?{urlencode(SEARCH_PARAMS)}"
+    print(f"Searching: {search_url}")
+    r = get(search_url)
+    items = parse_search(r.text, r.url) if (r is not None and r.status_code == 200) else []
+
+    if not items:
+        status = r.status_code if r is not None else "no response"
+        print(f"No results parsed (HTTP {status}).")
+        if not state["blocked_alerted"]:
+            send(args, topic, "⚠️ Craigslist watcher can't read results",
+                 f"Search returned HTTP {status} with no listings. Craigslist may be blocking "
+                 "GitHub's servers, or changed its page. See the README for running it on your Mac instead.",
+                 url=search_url, tags=["warning"], priority=3)
+            state["blocked_alerted"] = True
+            if not args.dry_run:
+                save_state(state)
+        return
+    state["blocked_alerted"] = False
+    print(f"Found {len(items)} posts on page 1.")
+
+    new = [it for it in items if listing_key(it["url"]) not in state["seen"]]
+    print(f"{len(new)} new since last run.")
+
+    if first_run and not args.notify_existing:
+        for it in items:
+            state["seen"][listing_key(it["url"])] = now_iso()
+        send(args, topic, "🏠 Craigslist watcher is live",
+             f"Tracking {len(items)} current posts. You'll get a push when a new one matches "
+             f"(1–2 bd, ≤${TARGET_PRICE:,} target, {MIN_SQFT}+ sq ft, in-unit W/D, parking).",
+             tags=["house"], priority=3)
+        if not args.dry_run:
+            save_state(state)
+        return
+
+    matches = 0
+    for i, it in enumerate(new[:MAX_DETAIL_FETCHES]):
+        if i:
+            time.sleep(random.uniform(1.5, 3.5))
+        key = listing_key(it["url"])
+        d = check_listing(it["url"])
+        if d is None:
+            print(f"  ? couldn't open {it['url']} (will retry next run)")
+            continue
+        state["seen"][key] = now_iso()
+        if d["gone"]:
+            print(f"  - gone: {it['title']}")
+            continue
+
+        keep, rejected, flags = evaluate(it, d)
+        if not keep:
+            print(f"  - skip ({'; '.join(rejected)}): {it['title']}")
+            continue
+
+        matches += 1
+        price = d["price"] or it.get("price")
+        bits = [f"${price:,}" if price else "price?",
+                f"{d['beds']} bd" if d["beds"] else None,
+                f"{d['sqft']:,} sq ft" if d["sqft"] else None,
+                d["hood"] or it.get("hood") or None]
+        line1 = " · ".join(b for b in bits if b)
+        msg = line1
+        if d["address"]:
+            msg += f"\n📍 {d['address']}"
+        if flags:
+            msg += "\n" + "\n".join(f"• {f}" for f in flags)
+        scammy = any("possible scam" in f for f in flags)
+        send(args, topic, it["title"] or d["header"], msg, url=it["url"],
+             tags=["warning"] if scammy else ["house"], priority=3 if scammy else 4)
+        print(f"  + MATCH: {it['title']}")
+
+    print(f"Done. {matches} match(es) sent.")
+    if not args.dry_run:
+        save_state(state)
+
+
+if __name__ == "__main__":
+    main()
