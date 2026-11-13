@@ -58,6 +58,7 @@ NEIGHBORHOODS = [
 ]
 GENERIC_HOODS = {"", "san francisco", "sf", "city of san francisco", "san francisco, ca"}
 
+ALERT_AFTER_FAILURES = 4    # consecutive blocked runs (~1 hour) before alerting
 MAX_DETAIL_FETCHES = 25      # per run, to stay polite; leftovers go next run
 STATE_FILE = Path(__file__).with_name("seen.json")
 NTFY_SERVER = os.environ.get("NTFY_SERVER", "https://ntfy.sh")
@@ -278,22 +279,22 @@ def evaluate(item, d):
 
 
 # ---------------- notifications ----------------
-def notify(topic, title, message, url=None, tags=None, priority=4):
+def notify(topic, title, message, url=None, tags=None, priority=4, label="Open listing"):
     payload = {"topic": topic, "title": title[:250], "message": message,
                "priority": priority, "tags": tags or []}
     if url:
         payload["click"] = url
-        payload["actions"] = [{"action": "view", "label": "Open listing", "url": url}]
+        payload["actions"] = [{"action": "view", "label": label, "url": url}]
     r = requests.post(NTFY_SERVER, json=payload, timeout=15)
     r.raise_for_status()
 
 
-def send(args, topic, title, message, url=None, tags=None, priority=4):
+def send(args, topic, title, message, url=None, tags=None, priority=4, label="Open listing"):
     if args.dry_run or not topic:
         print(f"\n[NOTIFY] {title}\n{message}\n{url or ''}")
         return
     try:
-        notify(topic, title, message, url, tags, priority)
+        notify(topic, title, message, url, tags, priority, label)
     except requests.RequestException as e:
         print(f"  ! ntfy failed: {e}", file=sys.stderr)
 
@@ -304,9 +305,10 @@ def load_state():
         s = json.loads(STATE_FILE.read_text())
         s.setdefault("seen", {})
         s.setdefault("blocked_alerted", False)
+        s.setdefault("fail_streak", 0)
         return s
     except (FileNotFoundError, json.JSONDecodeError):
-        return {"seen": {}, "blocked_alerted": False}
+        return {"seen": {}, "blocked_alerted": False, "fail_streak": 0}
 
 
 def save_state(state):
@@ -341,22 +343,34 @@ def main():
 
     search_url = f"{SEARCH_BASE}?{urlencode(SEARCH_PARAMS)}"
     print(f"Searching: {search_url}")
-    r = get(search_url)
+    r = None
+    for attempt, wait in enumerate([0, 20, 60]):
+        if wait:
+            print(f"  retrying search in {wait}s (HTTP {r.status_code if r is not None else 'none'})")
+            time.sleep(wait)
+        r = get(search_url)
+        if r is not None and r.status_code == 200:
+            break
     items = parse_search(r.text, r.url) if (r is not None and r.status_code == 200) else []
 
     if not items:
         status = r.status_code if r is not None else "no response"
-        print(f"No results parsed (HTTP {status}).")
-        if not state["blocked_alerted"]:
-            send(args, topic, "⚠️ Craigslist watcher can't read results",
-                 f"Search returned HTTP {status} with no listings. Craigslist may be blocking "
-                 "GitHub's servers, or changed its page. See the README for running it on your Mac instead.",
-                 url=search_url, tags=["warning"], priority=3)
+        state["fail_streak"] = state.get("fail_streak", 0) + 1
+        print(f"No results parsed (HTTP {status}); failure streak {state['fail_streak']}.")
+        if state["fail_streak"] >= ALERT_AFTER_FAILURES and not state["blocked_alerted"]:
+            send(args, topic, "Craigslist watcher blocked for ~1 hour",
+                 f"The last {state['fail_streak']} checks got HTTP {status}. Craigslist is blocking "
+                 "GitHub's servers right now. It keeps retrying and will tell you when it recovers.",
+                 url=search_url, tags=["warning"], priority=3, label="Open search")
             state["blocked_alerted"] = True
-            if not args.dry_run:
-                save_state(state)
+        if not args.dry_run:
+            save_state(state)
         return
+    if state["blocked_alerted"]:
+        send(args, topic, "Craigslist watcher recovered",
+             "Back to checking every 15 minutes.", tags=["white_check_mark"], priority=2)
     state["blocked_alerted"] = False
+    state["fail_streak"] = 0
     print(f"Found {len(items)} posts on page 1.")
 
     new = [it for it in items if listing_key(it["url"]) not in state["seen"]]
