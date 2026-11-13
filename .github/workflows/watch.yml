@@ -48,5 +48,7 @@ jobs:
           git config user.name "rent-a-hawk-bot"
           git config user.email "rent-a-hawk-bot@users.noreply.github.com"
           git add seen.json
-          git diff --cached --quiet || git commit -m "Update seen listings [skip ci]"
-          git push
+          git diff --cached --quiet && exit 0
+          git commit -m "Update seen listings [skip ci]"
+          for i in 1 2 3; do git pull --rebase -X theirs -q && git push -q && exit 0; sleep 5; done
+          exit 1
