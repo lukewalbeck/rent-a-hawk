@@ -38,10 +38,8 @@ SEARCH_PARAMS = [
     ("min_bedrooms", "1"),
     ("max_bedrooms", "2"),
     ("max_price", "5800"),   # hard cap; a little over target so you can negotiate
-    ("laundry", "1"),        # w/d in unit (Craigslist tag; re-checked below)
-    ("parking", "2"),        # attached garage
-    ("parking", "3"),        # detached garage
-    ("parking", "4"),        # off-street parking
+    # No laundry/parking checkboxes: many landlords don't tick them. Each post's
+    # text is checked instead (shared laundry / street-only parking are rejected).
     ("sort", "date"),        # newest first
 ]
 TARGET_PRICE = 5500          # flag anything above this
@@ -375,6 +373,15 @@ def main():
 
     new = [it for it in items if listing_key(it["url"]) not in state["seen"]]
     print(f"{len(new)} new since last run.")
+    kept = []
+    for it in new:
+        h = it.get("hood", "").strip()
+        if h and h not in GENERIC_HOODS and not any(n in h for n in NEIGHBORHOODS):
+            state["seen"][listing_key(it["url"])] = now_iso()
+            print(f"  - skip (neighborhood '{h}'): {it['title']}")
+        else:
+            kept.append(it)
+    new = kept
 
     if first_run and not args.notify_existing:
         for it in items:

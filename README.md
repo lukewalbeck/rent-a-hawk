@@ -9,7 +9,7 @@ pushes the ones that pass your must-haves to your phone. Free: GitHub Actions + 
 
 **Must-haves (reject if they fail):** Marina / Cow Hollow / Pac Heights / Presidio Heights /
 Laurel Heights / Inner Richmond / Russian Hill / North Beach / Telegraph Hill · 1–2 bd ·
-≤ $5,800 · 750+ sq ft (when listed) · in-unit W/D (not shared) · real parking (not street-only).
+≤ $5,800 · 750+ sq ft (when listed) · in-unit W/D (not shared) · real parking (not street-only). Laundry and parking are read from each post's text, not Craigslist checkboxes.
 
 **Flags in the notification:** over $5,500 target · parking may cost extra · no dishwasher
 mentioned · rent-controlled ✅ · sq ft / laundry / parking unclear · ⚠️ possible scam
