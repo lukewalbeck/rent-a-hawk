@@ -177,6 +177,21 @@ def parse_email(msg):
     return out
 
 
+def is_loose(msg, subject):
+    """True for alerts from the 'rent-a-hawk LOOSE' saved search (name appears in the email)."""
+    if "loose" in subject.lower():
+        return True
+    for part in msg.walk():
+        if part.get_content_maintype() == "text":
+            try:
+                body = part.get_payload(decode=True).decode(part.get_content_charset() or "utf-8", "replace")
+            except Exception:
+                continue
+            if re.search(r"rent-a-hawk\s+loose", BeautifulSoup(body, "html.parser").get_text(" ").lower()):
+                return True
+    return False
+
+
 def evaluate(li):
     reject, flags = [], []
     if li["price"] and li["price"] > MAX_PRICE:
@@ -256,6 +271,12 @@ def main():
         if typ != "OK":
             continue
         msg = email.message_from_bytes(raw[0][1])
+        if is_loose(msg, subject):
+            # Loose saved search (no laundry/parking filter): too noisy to push unverified.
+            # The 3x-daily report opens each of these listings and checks them instead.
+            print(f"  email: {subject!r} -> loose search, left for the daily report")
+            est["msgs"][mid] = cw.now_iso()
+            continue
         listings = parse_email(msg)
         print(f"  email: {subject!r} -> {len(listings)} listing link(s)")
         for li in listings:
