@@ -35,6 +35,9 @@ MAX_PRICE = 5800
 TARGET_PRICE = cw.TARGET_PRICE
 MIN_SQFT = cw.MIN_SQFT
 BEDS = (1, 2)
+# Email listings are pushed by the hourly Claude checker after it opens and verifies
+# each one (GitHub can't open Zillow/Trulia pages). Set True to push straight from email.
+PUSH_FROM_EMAIL = False
 # ============================================================
 
 LISTING_RE = re.compile(
@@ -300,8 +303,9 @@ def main():
             if flags:
                 body += "\n" + "\n".join(f"• {f}" for f in flags)
             title = li["address"] or f"New {site_of(li['url'])} listing"
-            cw.send(args, topic, title, body, url=li["url"], tags=["house"], priority=4)
-            sent += 1
+            if PUSH_FROM_EMAIL:
+                cw.send(args, topic, title, body, url=li["url"], tags=["house"], priority=4)
+                sent += 1
             print(f"    + MATCH: {title} | {li['price'] or '?'} | {li['url']}")
         est["msgs"][mid] = cw.now_iso()
 

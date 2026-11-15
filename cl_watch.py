@@ -54,6 +54,11 @@ NEIGHBORHOODS = [
     "inner richmond",
     "russian hill", "north beach", "telegraph hill",
 ]
+# Map boxes (lat_min, lat_max, lon_min, lon_max) covering the target neighborhoods.
+AREA_BOXES = [
+    (37.785, 37.809, -122.452, -122.404),   # Marina, Cow Hollow, Pac Hts, Russian Hill, North Beach
+    (37.772, 37.792, -122.478, -122.443),   # Inner Richmond, Laurel Hts, Presidio Hts
+]
 GENERIC_HOODS = {"", "san francisco", "sf", "city of san francisco", "san francisco, ca"}
 
 ALERT_AFTER_FAILURES = 4    # consecutive blocked runs (~1 hour) before alerting
@@ -196,8 +201,21 @@ def check_listing(url):
     if m:
         beds = int(m.group(1))
 
+    lat = lon = None
+    geo = soup.select_one("[data-latitude][data-longitude]")
+    if geo:
+        try:
+            lat, lon = float(geo["data-latitude"]), float(geo["data-longitude"])
+        except ValueError:
+            pass
+    if lat is None:
+        m = re.search(r'"latitude"\s*:\s*(-?\d+\.\d+).{0,80}?"longitude"\s*:\s*(-?\d+\.\d+)', r.text, re.S)
+        if m:
+            lat, lon = float(m.group(1)), float(m.group(2))
+
     return {
         "gone": False,
+        "lat": lat, "lon": lon,
         "header": header or page_title,
         "hood": hood,
         "price": parse_price(header) or parse_price(page_title),
@@ -218,9 +236,12 @@ def evaluate(item, d):
     hood = d["hood"] or item.get("hood", "")
     price = d["price"] or item.get("price")
 
-    # Neighborhood
-    if any(n in hood for n in NEIGHBORHOODS):
-        pass
+    # Neighborhood: label match, or the post's map pin is inside a target box.
+    lat, lon = d.get("lat"), d.get("lon")
+    in_box = lat is not None and any(a <= lat <= b and c <= lon <= e for a, b, c, e in AREA_BOXES)
+    if any(n in hood for n in NEIGHBORHOODS) or in_box:
+        if in_box and not any(n in hood for n in NEIGHBORHOODS):
+            flags.append("in your area by map pin")
     elif hood.strip() in GENERIC_HOODS or not hood:
         blob = (item.get("title", "") + " " + d["header"] + " " + body_low[:400]).lower()
         if any(n in blob for n in NEIGHBORHOODS):
