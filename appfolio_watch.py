@@ -46,7 +46,8 @@ ZIP_SPANS_OTHER_AREAS = {"94115", "94109"}
 
 UUID_RE = re.compile(r"/listings/detail/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})")
 ZIP_RE = re.compile(r"\b(94\d{3})(?:-\d{4})?\b")
-SQFT_RE = re.compile(r"square\s*feet\s*:?\s*([\d,]{3,6})|([\d,]{3,6})\s*(?:sq\.?\s?ft|sqft|square feet)", re.I)
+SQFT_LABEL_RE = re.compile(r"square\s*feet\s*:?\s*([\d,]{3,6})", re.I)
+SQFT_RE = re.compile(r"(?<![\d,$.])([\d,]{3,6})\s*(?:sq\.?\s?ft|sqft|square feet|sf)\b", re.I)
 BEDS_RE = re.compile(r"(?<![\d,$.])(\d{1,2})\s*(?:bd|beds?|br)\b", re.I)
 ADDR_RE = re.compile(r"\d{1,5}[^,]{2,60},\s*San Francisco,?\s*(?:CA)?\s*94\d{3}(?:-\d{4})?", re.I)
 COORD_RE = re.compile(r'"?lat(?:itude)?"?\s*[:=]\s*"?(3[78]\.\d+)"?\s*,\s*"?(?:lng|lon|longitude)"?\s*[:=]\s*"?(-12[23]\.\d+)')
@@ -93,8 +94,8 @@ def parse_card(uid, node, html):
         address = m.group(0) if m else ""
     m = re.search(r"rent\s*\$\s?([\d,]{3,7})", text, re.I) or re.search(r"\$\s?([\d,]{3,7})", text)
     price = int(m.group(1).replace(",", "")) if m else None
-    m = SQFT_RE.search(text)
-    sqft = int((m.group(1) or m.group(2)).replace(",", "")) if m else None
+    m = SQFT_LABEL_RE.search(text) or SQFT_RE.search(text)
+    sqft = int(m.group(1).replace(",", "")) if m else None
     m = BEDS_RE.search(text)
     beds = int(m.group(1)) if m else (0 if "studio" in low else None)
     m = ZIP_RE.search(address) or ZIP_RE.search(text)

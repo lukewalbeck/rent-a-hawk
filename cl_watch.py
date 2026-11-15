@@ -69,7 +69,7 @@ IN_UNIT = ["w/d in unit", "washer/dryer in unit", "washer & dryer in unit",
            "washer/dryer in the unit", "in-unit w/d", "in unit w/d"]
 SHARED_LAUNDRY = ["laundry on site", "laundry on-site", "on-site laundry", "onsite laundry", "laundry onsite",
                   "laundry in bldg", "laundry in building", "shared laundry",
-                  "coin laundry", "coin-op", "laundry room"]
+                  "coin laundry", "coin-op", "coin op", "laundry room"]
 REAL_PARKING = ["attached garage", "detached garage", "off-street parking", "garage parking",
                 "parking included", "1 car parking", "one-car parking", "one car parking",
                 "parking space", "parking spot", "carport", "garage"]
