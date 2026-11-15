@@ -1,7 +1,13 @@
 {
  "blocked_alerted": false,
  "email": {
-  "addrs": {},
+  "addrs": {
+   "1025 sutter st downtown view listing": "2026-11-15T05:00:33+00:00",
+   "1060 pine st downtown view listing": "2026-11-15T05:00:33+00:00",
+   "1474 sacramento st nob hill view listing": "2026-11-15T05:00:33+00:00",
+   "1474 sacramento st nob hill view listing $4": "2026-11-15T05:00:33+00:00",
+   "916 pacific ave nob hill view listing": "2026-11-15T05:00:33+00:00"
+  },
   "auth_alerted": false,
   "listings": {
    "https://zumper.com/apartment-buildings/1717500/blueground-san-francisco-soma-san-francisco-ca": "2026-11-15T04:45:33+00:00",
@@ -9,19 +15,34 @@
    "https://zumper.com/apartment-buildings/p13017/soma-square-soma-san-francisco-ca": "2026-11-15T04:45:33+00:00",
    "https://zumper.com/apartment-buildings/p13159/azure-mission-bay-san-francisco-ca": "2026-11-15T04:45:33+00:00",
    "https://zumper.com/apartment-buildings/p13179/potrero-1010-potrero-hill-san-francisco-ca": "2026-11-15T04:45:33+00:00",
+   "https://zumper.com/apartment-buildings/p190965/1060-pine-downtown-san-francisco-ca": "2026-11-15T05:00:33+00:00",
    "https://zumper.com/apartment-buildings/p198708/855-brannan-soma-san-francisco-ca": "2026-11-15T04:45:33+00:00",
    "https://zumper.com/apartment-buildings/p208324/one-henry-adams-potrero-hill-san-francisco-ca": "2026-11-15T04:45:33+00:00",
+   "https://zumper.com/apartment-buildings/p210114/1474-sacramento-street-nob-hill-san-francisco-ca": "2026-11-15T05:00:33+00:00",
    "https://zumper.com/apartment-buildings/p210163/340-fremont-south-beach-san-francisco-ca": "2026-11-15T04:45:33+00:00",
    "https://zumper.com/apartment-buildings/p228900/333-fremont-south-beach-san-francisco-ca": "2026-11-15T04:45:33+00:00",
+   "https://zumper.com/apartment-buildings/p252269/916-pacific-nob-hill-san-francisco-ca": "2026-11-15T05:00:33+00:00",
    "https://zumper.com/apartment-buildings/p398666/500-folsom-soma-san-francisco-ca": "2026-11-15T04:45:33+00:00",
+   "https://zumper.com/apartment-buildings/p484371/1025-sutter-downtown-san-francisco-ca": "2026-11-15T05:00:33+00:00",
    "https://zumper.com/apartments-for-rent/1,2-beds/under-5800": "2026-11-15T04:45:33+00:00",
    "https://zumper.com/apartments-for-rent/san-francisco-ca": "2026-11-15T04:45:33+00:00",
+   "https://zumper.com/apartments-for-rent/san-francisco-ca/nob-hill": "2026-11-15T05:00:33+00:00",
+   "https://zumper.com/apartments-for-rent/san-francisco-ca/nob-hill/1+beds/price-3600,5400": "2026-11-15T05:00:33+00:00",
+   "https://zumper.com/apartments-for-rent/san-francisco-ca/nob-hill/1-beds": "2026-11-15T05:00:33+00:00",
+   "https://zumper.com/apartments-for-rent/san-francisco-ca/nob-hill/2-beds": "2026-11-15T05:00:33+00:00",
+   "https://zumper.com/apartments-for-rent/san-francisco-ca/nob-hill/3-beds": "2026-11-15T05:00:33+00:00",
+   "https://zumper.com/apartments-for-rent/san-francisco-ca/nob-hill/4+beds": "2026-11-15T05:00:33+00:00",
+   "https://zumper.com/apartments-for-rent/san-francisco-ca/nob-hill/no-fee": "2026-11-15T05:00:33+00:00",
+   "https://zumper.com/apartments-for-rent/san-francisco-ca/nob-hill/pet-friendly": "2026-11-15T05:00:33+00:00",
+   "https://zumper.com/apartments-for-rent/san-francisco-ca/nob-hill/studios": "2026-11-15T05:00:33+00:00",
    "https://zumper.com/apartments-for-rent/san-francisco-ca/soma": "2026-11-15T04:45:33+00:00"
   },
   "msgs": {
    "<010101a1dd822791-4677691e-fb41-486a-ab9d-0be6ba97bc36-000000@us-west-2.amazonses.com>": "2026-11-15T04:45:40+00:00",
    "<B0.3D.22364.BC739FA6@i-063a73f5527672d90.mta1vrest.sd.prd.sparkpost>": "2026-11-15T04:45:33+00:00",
-   "<C4.50.10412.CA996FA6@i-0963019fe97acd848.mta2vrest.sd.prd.sparkpost>": "2026-11-15T03:15:24+00:00"
+   "<C4.50.10412.CA996FA6@i-0963019fe97acd848.mta2vrest.sd.prd.sparkpost>": "2026-11-15T03:15:24+00:00",
+   "<E9.4D.46522.2AA39FA6@i-075954c3fd01eabd4.mta1vrest.sd.prd.sparkpost>": "2026-11-15T05:00:33+00:00",
+   "<FD.B3.62376.CBB39FA6@i-0ddd0f7bcd8e65296.mta1vrest.sd.prd.sparkpost>": "2026-11-15T05:00:33+00:00"
   }
  },
  "fail_streak": 0,
@@ -246,6 +267,7 @@
   "8acLfrGvgmbikJB2ifLdm5": "2026-11-14T02:15:17+00:00",
   "8heXJGp61zd1o5H2EqNdAq": "2026-11-14T02:15:17+00:00",
   "8j2HkNDzXrFnuUvy1rnvZX": "2026-11-14T02:15:28+00:00",
+  "8mkvkrunFcRgutdeXPUT9U": "2026-11-15T05:00:24+00:00",
   "8oExTNpFrkQdRdFvzMiGey": "2026-11-13T15:54:27+00:00",
   "8pH5YtXvJznzjEywsExBsb": "2026-11-14T02:15:17+00:00",
   "8qDJdmu1tfCbze2pQk2KYb": "2026-11-14T19:06:39+00:00",
@@ -375,6 +397,7 @@
   "fZPnHoegwMYd4sGhkfX6CH": "2026-11-14T02:15:17+00:00",
   "fmfbjUJpAu8uiY6JPZTqaR": "2026-11-14T02:15:17+00:00",
   "fnB2qDb9KE9arywF9ssJye": "2026-11-14T02:15:17+00:00",
+  "ftjWd2UceiJUayhomEBdNH": "2026-11-15T05:00:24+00:00",
   "fyDZY9pMvDDj8gwMKe6Jxz": "2026-11-14T02:15:17+00:00",
   "fyygoBggzjmVAvPvuDW2z8": "2026-11-14T02:15:17+00:00",
   "fzj7gNyp76q6iyKqg5uda3": "2026-11-14T02:15:17+00:00",
