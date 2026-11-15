@@ -82,7 +82,13 @@ DELETED = ["this posting has been deleted", "this posting has expired",
 SCAM_PHRASES = ["wire transfer", "western union", "moneygram", "zelle", "cashapp", "cash app",
                 "out of the country", "out of town", "out of state", "missionary",
                 "deposit to hold", "deposit before", "before viewing", "before the viewing",
-                "keys will be mailed", "keys mailed", "god bless", "airbnb will handle"]
+                "keys will be mailed", "keys mailed", "god bless", "airbnb will handle",
+                "text me your phone", "text me your number", "your phone number", "text me at",
+                "holding fee", "hold fee", "whatsapp", "google voice", "reply with your email",
+                "send me your", "gift card", "crypto", "bitcoin"]
+# Rent below these is effectively never real in these neighborhoods.
+SCAM_PRICE_FLOOR = {0: 2200, 1: 2800, 2: 3600}     # beds -> reject below this
+BELOW_MARKET = {0: 3000, 1: 3800, 2: 4600}         # beds -> flag "verify before paying"
 ADDRESS_RE = re.compile(
     r"\b\d{2,5}[A-Za-z]?\s+(?:[A-Z][a-z]+\s){0,3}(?:St|Street|Ave|Avenue|Blvd|Boulevard|"
     r"Way|Ter|Terrace|Pl|Place|Ct|Court|Dr|Drive|Ln|Lane|Rd|Road)\b")
@@ -258,20 +264,25 @@ def evaluate(item, d):
     if price and price > TARGET_PRICE:
         flags.append(f"over ${TARGET_PRICE:,} target")
 
-    # Scam signals (flag, don't hide)
-    scam = []
-    if len(d["body"]) < 200:
-        scam.append("very short description")
-    hits = [p for p in SCAM_PHRASES if p in body_low]
+    # Scam signals. Strong signals reject outright; weak ones are flagged.
+    beds = d["beds"] if d["beds"] is not None else 1
+    bkey = min(beds, 2)
+    if price and price < SCAM_PRICE_FLOOR[bkey]:
+        reject.append(f"scam: ${price:,} is far below market")
+    if item.get("copy_of"):
+        reject.append(f"scam: copy of a ${item['copy_of']:,} listing with the same title")
+    hits = [p for p in SCAM_PHRASES if p in text]
     if hits:
-        scam.append("mentions " + ", ".join(hits[:3]))
-    beds = d["beds"]
-    if price and ((beds and beds >= 2 and price < 4000) or (beds == 1 and price < 3000)):
-        scam.append("price unusually low")
+        reject.append("scam: mentions " + ", ".join(hits[:3]))
+    weak = []
+    if len(d["body"]) < 200:
+        weak.append("very short description")
     if not d["address"] and not ADDRESS_RE.search(d["header"] + " " + d["body"]):
-        scam.append("no address")
-    if len(scam) >= 2 or any(s.startswith("mentions") for s in scam):
-        flags.append("⚠️ possible scam: " + "; ".join(scam))
+        weak.append("no address")
+    if price and price < BELOW_MARKET[bkey]:
+        weak.append("well below market price")
+    if weak:
+        flags.append("⚠️ verify before paying: " + "; ".join(weak))
 
     return (not reject), reject, flags
 
@@ -393,6 +404,19 @@ def main():
         if not args.dry_run:
             save_state(state)
         return
+
+    # Scammers repost real listings at a fake low price with the same title.
+    def norm_title(t):
+        return re.sub(r"[^a-z0-9 ]", "", (t or "").lower()).strip()
+    top_price = {}
+    for it in items:
+        k = norm_title(it["title"])
+        if it.get("price") and k:
+            top_price[k] = max(top_price.get(k, 0), it["price"])
+    for it in new:
+        hi = top_price.get(norm_title(it["title"]), 0)
+        if it.get("price") and hi > 1.5 * it["price"]:
+            it["copy_of"] = hi
 
     matches = 0
     for i, it in enumerate(new[:MAX_DETAIL_FETCHES]):
