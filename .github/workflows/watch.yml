@@ -62,6 +62,13 @@ jobs:
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
         run: python rsfn_watch.py
 
+      - name: Check landlord sites (AppFolio)
+        if: inputs.mode != 'test-notify'
+        continue-on-error: true
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+        run: python appfolio_watch.py
+
       - name: Save seen listings
         run: |
           git config user.name "rent-a-hawk-bot"

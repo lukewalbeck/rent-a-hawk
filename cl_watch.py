@@ -67,9 +67,9 @@ IN_UNIT = ["w/d in unit", "washer/dryer in unit", "washer & dryer in unit",
            "washer and dryer in unit", "in-unit laundry", "in unit laundry",
            "laundry in unit", "in-unit washer", "in unit washer",
            "washer/dryer in the unit", "in-unit w/d", "in unit w/d"]
-SHARED_LAUNDRY = ["laundry on site", "laundry on-site", "on-site laundry", "onsite laundry",
+SHARED_LAUNDRY = ["laundry on site", "laundry on-site", "on-site laundry", "onsite laundry", "laundry onsite",
                   "laundry in bldg", "laundry in building", "shared laundry",
-                  "coin laundry", "coin-op", "laundry room"]
+                  "coin laundry", "coin-op", "coin op", "laundry room"]
 REAL_PARKING = ["attached garage", "detached garage", "off-street parking", "garage parking",
                 "parking included", "1 car parking", "one-car parking", "one car parking",
                 "parking space", "parking spot", "carport", "garage"]
@@ -283,7 +283,10 @@ def evaluate(item, d):
         reject.append(f"scam: ${price:,} is far below market")
     if item.get("copy_of"):
         reject.append(f"scam: copy of a ${item['copy_of']:,} listing with the same title")
-    hits = [p for p in SCAM_PHRASES if p in text]
+    # Post text only: the full page includes Craigslist's own safety tips
+    # ("never use western union...", "your phone number"), which flagged real posts.
+    post_low = (d["header"] + " " + d["body"]).lower()
+    hits = [p for p in SCAM_PHRASES if p in post_low]
     if hits:
         reject.append("scam: mentions " + ", ".join(hits[:3]))
     nope = [p for p in REJECT_PHRASES if p in text]
