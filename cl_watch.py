@@ -161,6 +161,11 @@ def check_listing(url):
     if r.status_code == 404:
         return {"gone": True}
     soup = BeautifulSoup(r.text, "html.parser")
+    # Drop Craigslist's own boilerplate ("DO NOT wire funds (e.g. Western Union)",
+    # safety notices, reply tips) so it isn't mistaken for the poster's words.
+    for junk in soup.select(".avoid-scams, aside.tsb, .notices, .reply-info, "
+                            "script, style, noscript"):
+        junk.decompose()
     full = soup.get_text(" ", strip=True)
     low = full.lower()
     if any(p in low for p in DELETED):
@@ -422,7 +427,10 @@ def main():
     kept = []
     for it in new:
         h = it.get("hood", "").strip()
-        if h and h not in GENERIC_HOODS and not any(n in h for n in NEIGHBORHOODS):
+        # Only skip clearly out-of-area labels ("oakland, ca", "mission district").
+        # Vague SF labels like "richmond district" go on to the map-pin check.
+        vague = any(v in h for v in ("richmond", "pacific", "presidio", "heights", "hill"))
+        if h and h not in GENERIC_HOODS and not vague and not any(n in h for n in NEIGHBORHOODS):
             state["seen"][listing_key(it["url"])] = now_iso()
             print(f"  - skip (neighborhood '{h}'): {it['title']}")
         else:
