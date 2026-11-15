@@ -224,6 +224,32 @@ def check_listing(url):
     }
 
 
+DATE_CTX_RE = re.compile(
+    r"(open house|showing|available|move[- ]in)[^.\n]{0,40}?\b(\d{1,2})/(\d{1,2})\b")
+
+
+def stale_dates(text, today=None):
+    """True if an open-house / availability date in the post can't be current."""
+    today = today or datetime.now().date()
+    for m in DATE_CTX_RE.finditer(text):
+        kind, mo, day = m.group(1), int(m.group(2)), int(m.group(3))
+        if not (1 <= mo <= 12 and 1 <= day <= 31):
+            continue
+        deltas = []
+        for yr in (today.year - 1, today.year, today.year + 1):
+            try:
+                deltas.append((today.replace(year=yr, month=mo, day=day) - today).days)
+            except ValueError:
+                pass
+        if not deltas:
+            continue
+        # Open houses happen within weeks; move-in dates can be months out.
+        lo, hi = (-14, 45) if kind in ("open house", "showing") else (-60, 200)
+        if not any(lo <= dl <= hi for dl in deltas):
+            return True
+    return False
+
+
 RC_YEAR_RE = re.compile(r"built in (1[89]\d\d)")
 
 
@@ -319,8 +345,15 @@ def evaluate(item, d):
         weak.append("very short description")
     if not d["address"] and not ADDRESS_RE.search(d["header"] + " " + d["body"]):
         weak.append("no address")
-    if price and price < BELOW_MARKET[bkey]:
+    below = bool(price and price < BELOW_MARKET[bkey])
+    if below:
         weak.append("well below market price")
+    if stale_dates(post_low):
+        # Old open-house/availability dates = text copied from an old ad.
+        if below:
+            reject.append("scam: old ad text (stale dates) at a below-market price")
+        else:
+            weak.append("dates in the ad look old (may be copied)")
     if weak:
         flags.append("⚠️ verify before paying: " + "; ".join(weak))
 
