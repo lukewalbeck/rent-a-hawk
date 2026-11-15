@@ -1,4 +1,5 @@
 name: craigslist-watch
+# (also checks Zillow/Trulia alert emails)
 
 on:
   schedule:
@@ -34,6 +35,7 @@ jobs:
       - run: pip install -r requirements.txt
 
       - name: Check Craigslist
+        continue-on-error: true
         env:
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
         run: |
@@ -42,6 +44,16 @@ jobs:
             notify-existing) python cl_watch.py --notify-existing ;;
             *)               python cl_watch.py ;;
           esac
+
+      - name: Check Zillow/Trulia alert emails
+        if: inputs.mode != 'test-notify'
+        continue-on-error: true
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+        run: |
+          if [ "${{ inputs.mode }}" = "notify-existing" ]; then python email_watch.py --notify-existing; else python email_watch.py; fi
 
       - name: Save seen listings
         run: |

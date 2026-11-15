@@ -2,6 +2,18 @@
 
 Watches SF rental listings like a hawk. Starting with Craigslist; Trulia/Zillow email alerts coming later.
 
+## Zillow / Trulia / Apartments.com alerts (email_watch.py)
+
+Your saved searches on those sites email you instantly. Each run, rent-a-hawk reads new
+alert emails over Gmail IMAP (**read-only** — it never marks mail read, moves or deletes
+anything), pulls out each listing, drops ones over budget / under 750 sq ft / wrong bed
+count / shared laundry / no parking, de-dupes the same place across sites, and pushes the
+rest to ntfy with a link straight to the listing.
+
+Setup: add repo secrets `GMAIL_USER` (your Gmail address) and `GMAIL_APP_PASSWORD`
+(create one at https://myaccount.google.com/apppasswords — needs 2-Step Verification).
+The first run records alerts already in your inbox without pushing them.
+
 ## Craigslist watcher
 
 Checks Craigslist every 20 minutes (6am–11pm Pacific), opens every **new** post, and
