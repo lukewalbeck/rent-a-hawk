@@ -1,0 +1,65 @@
+{
+  "_about": "Single source of truth for what counts as a match. Read by cl_watch.py, email_watch.py and Claude's hourly check. Edit here, not in the scripts.",
+  "beds": [
+    1,
+    2
+  ],
+  "max_price": 5800,
+  "target_price": 5500,
+  "min_sqft": 750,
+  "neighborhoods": [
+    "marina",
+    "cow hollow",
+    "pacific heights",
+    "pac heights",
+    "pac hts",
+    "lower pac",
+    "presidio heights",
+    "presidio hts",
+    "laurel heights",
+    "laurel hts",
+    "lake st",
+    "jordan park",
+    "inner richmond",
+    "russian hill",
+    "north beach",
+    "telegraph hill"
+  ],
+  "area_boxes": [
+    [
+      37.785,
+      37.809,
+      -122.452,
+      -122.404
+    ],
+    [
+      37.772,
+      37.792,
+      -122.478,
+      -122.443
+    ]
+  ],
+  "must_have": [
+    "in-unit washer/dryer",
+    "real parking (garage, off-street, assigned; extra fee OK)"
+  ],
+  "nice_to_have": [
+    "dishwasher",
+    "rent control (pre-1979 building)"
+  ],
+  "scam_price_floor": {
+    "0": 2200,
+    "1": 2800,
+    "2": 3600
+  },
+  "below_market_flag": {
+    "0": 3000,
+    "1": 3800,
+    "2": 4600
+  },
+  "dealbreakers": [],
+  "notes": [],
+  "reject_phrases": [],
+  "_reject_phrases": "Exact phrases (lowercase). A post containing any is rejected by the scripts and by Claude.",
+  "_dealbreakers": "Plain-English rules for Claude to judge (e.g. 'no units on Geary or Lombard'). Scripts can't check these; Claude's hourly check and report do."
+}

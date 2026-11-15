@@ -34,31 +34,22 @@ from bs4 import BeautifulSoup
 # YOUR SEARCH — edit these
 # ============================================================
 SEARCH_BASE = "https://sfbay.craigslist.org/search/sfc/apa"
+# What counts as a match lives in criteria.json (shared with email_watch.py and
+# Claude's hourly check). Edit that file, not these lines.
+CRITERIA = json.loads(Path(__file__).with_name("criteria.json").read_text())
 SEARCH_PARAMS = [
-    ("min_bedrooms", "1"),
-    ("max_bedrooms", "2"),
-    ("max_price", "5800"),   # hard cap; a little over target so you can negotiate
+    ("min_bedrooms", str(min(CRITERIA["beds"]))),
+    ("max_bedrooms", str(max(CRITERIA["beds"]))),
+    ("max_price", str(CRITERIA["max_price"])),
     # No laundry/parking checkboxes: many landlords don't tick them. Each post's
     # text is checked instead (shared laundry / street-only parking are rejected).
     ("sort", "date"),        # newest first
 ]
-TARGET_PRICE = 5500          # flag anything above this
-MIN_SQFT = 750               # reject if listed smaller; flag if not listed
-
-# Matched against the post's neighborhood label, title and opening text.
-NEIGHBORHOODS = [
-    "marina", "cow hollow",
-    "pacific heights", "pac heights", "pac hts", "lower pac",
-    "presidio heights", "presidio hts", "laurel heights", "laurel hts",
-    "lake st", "jordan park",
-    "inner richmond",
-    "russian hill", "north beach", "telegraph hill",
-]
-# Map boxes (lat_min, lat_max, lon_min, lon_max) covering the target neighborhoods.
-AREA_BOXES = [
-    (37.785, 37.809, -122.452, -122.404),   # Marina, Cow Hollow, Pac Hts, Russian Hill, North Beach
-    (37.772, 37.792, -122.478, -122.443),   # Inner Richmond, Laurel Hts, Presidio Hts
-]
+TARGET_PRICE = CRITERIA["target_price"]   # flag anything above this
+MIN_SQFT = CRITERIA["min_sqft"]           # reject if listed smaller; flag if not listed
+NEIGHBORHOODS = CRITERIA["neighborhoods"]  # matched against label, title, opening text
+AREA_BOXES = [tuple(b) for b in CRITERIA["area_boxes"]]  # (lat_min, lat_max, lon_min, lon_max)
+REJECT_PHRASES = [p.lower() for p in CRITERIA.get("reject_phrases", [])]
 GENERIC_HOODS = {"", "san francisco", "sf", "city of san francisco", "san francisco, ca"}
 
 ALERT_AFTER_FAILURES = 4    # consecutive blocked runs (~1 hour) before alerting
@@ -92,8 +83,8 @@ SCAM_PHRASES = ["wire transfer", "western union", "moneygram", "zelle", "cashapp
                 "holding fee", "hold fee", "whatsapp", "google voice", "reply with your email",
                 "send me your", "gift card", "crypto", "bitcoin"]
 # Rent below these is effectively never real in these neighborhoods.
-SCAM_PRICE_FLOOR = {0: 2200, 1: 2800, 2: 3600}     # beds -> reject below this
-BELOW_MARKET = {0: 3000, 1: 3800, 2: 4600}         # beds -> flag "verify before paying"
+SCAM_PRICE_FLOOR = {int(k): v for k, v in CRITERIA["scam_price_floor"].items()}  # reject below
+BELOW_MARKET = {int(k): v for k, v in CRITERIA["below_market_flag"].items()}    # flag "verify"
 ADDRESS_RE = re.compile(
     r"\b\d{2,5}[A-Za-z]?\s+(?:[A-Z][a-z]+\s){0,3}(?:St|Street|Ave|Avenue|Blvd|Boulevard|"
     r"Way|Ter|Terrace|Pl|Place|Ct|Court|Dr|Drive|Ln|Lane|Rd|Road)\b")
@@ -295,6 +286,9 @@ def evaluate(item, d):
     hits = [p for p in SCAM_PHRASES if p in text]
     if hits:
         reject.append("scam: mentions " + ", ".join(hits[:3]))
+    nope = [p for p in REJECT_PHRASES if p in text]
+    if nope:
+        reject.append("your dealbreaker: " + ", ".join(nope[:3]))
     weak = []
     if len(d["body"]) < 200:
         weak.append("very short description")

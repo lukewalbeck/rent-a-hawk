@@ -29,12 +29,12 @@ from bs4 import BeautifulSoup
 import cl_watch as cw  # shared: notify/send, state, settings
 
 # ============================================================
-SEARCH = ('from:(zillow.com OR trulia.com OR apartments.com) '
+SEARCH = ('from:(zillow.com OR trulia.com OR apartments.com OR zumper.com OR padmapper.com OR redfin.com) '
           '-from:comet.zillow.com newer_than:3d')   # comet.zillow.com = your rent payments
-MAX_PRICE = 5800
+MAX_PRICE = cw.CRITERIA["max_price"]
 TARGET_PRICE = cw.TARGET_PRICE
 MIN_SQFT = cw.MIN_SQFT
-BEDS = (1, 2)
+BEDS = (min(cw.CRITERIA["beds"]), max(cw.CRITERIA["beds"]))
 # Email listings are pushed by the hourly Claude checker after it opens and verifies
 # each one (GitHub can't open Zillow/Trulia pages). Set True to push straight from email.
 PUSH_FROM_EMAIL = False
@@ -43,8 +43,11 @@ PUSH_FROM_EMAIL = False
 LISTING_RE = re.compile(
     r"https?://(?:www\.)?(?:zillow\.com/(?:homedetails|apartments|b|rental-manager/listings)/"
     r"|trulia\.com/(?:home|p|building|rental|rental-community)/"
-    r"|apartments\.com/[a-z0-9-]+/[a-z0-9]+/?$)", re.I)
-SITE_HOSTS = ("zillow.com", "trulia.com", "apartments.com")
+    r"|apartments\.com/[a-z0-9-]+/[a-z0-9]+/?$"
+    r"|zumper\.com/(?:apartment-buildings|apartments-for-rent|address)/"
+    r"|padmapper\.com/(?:buildings|apartments)/"
+    r"|redfin\.com/[A-Z]{2}/[^?]+/(?:home|apartment)/\d)", re.I)
+SITE_HOSTS = ("zillow.com", "trulia.com", "apartments.com", "zumper.com", "padmapper.com", "redfin.com")
 PRICE_RE = re.compile(r"\$\s?(\d{1,2},?\d{3})(?:\s*[-–]\s*\$?\s?(\d{1,2},?\d{3}))?")
 BEDS_RE = re.compile(r"(\d)\s*(?:bd|bds|beds?|br)\b", re.I)
 STUDIO_RE = re.compile(r"\bstudio\b", re.I)
@@ -208,6 +211,9 @@ def evaluate(li):
         reject.append("shared laundry")
     if any(k in low for k in NO_PARKING):
         reject.append("no parking")
+    nope = [p for p in cw.REJECT_PHRASES if p in low]
+    if nope:
+        reject.append("dealbreaker: " + ", ".join(nope[:3]))
     if li["price"] and li["price"] > TARGET_PRICE:
         flags.append(f"over ${TARGET_PRICE:,} target")
     if li["sqft"] is None:
@@ -219,7 +225,11 @@ def evaluate(li):
 
 def site_of(url):
     h = urlsplit(url).netloc
-    return "Zillow" if "zillow" in h else "Trulia" if "trulia" in h else "Apartments.com" if "apartments" in h else "Listing"
+    for key, name in (("zillow", "Zillow"), ("trulia", "Trulia"), ("apartments", "Apartments.com"),
+                      ("zumper", "Zumper"), ("padmapper", "PadMapper"), ("redfin", "Redfin")):
+        if key in h:
+            return name
+    return "Listing"
 
 
 def main():
