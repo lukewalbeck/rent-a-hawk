@@ -55,6 +55,13 @@ jobs:
         run: |
           if [ "${{ inputs.mode }}" = "notify-existing" ]; then python email_watch.py --notify-existing; else python email_watch.py; fi
 
+      - name: Check RentSFNow
+        if: inputs.mode != 'test-notify'
+        continue-on-error: true
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+        run: python rsfn_watch.py
+
       - name: Save seen listings
         run: |
           git config user.name "rent-a-hawk-bot"
