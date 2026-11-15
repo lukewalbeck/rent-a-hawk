@@ -219,6 +219,18 @@ def check_listing(url):
     }
 
 
+RC_YEAR_RE = re.compile(r"built in (1[89]\d\d)")
+
+
+def is_rent_controlled(text):
+    """True if the post says it's rent-controlled or was built before mid-1979."""
+    if any(k in text for k in ("rent ordinance", "rent control", "rent-controlled",
+                               "rent stabiliz")):
+        return True
+    m = RC_YEAR_RE.search(text)
+    return bool(m and int(m.group(1)) < 1979)
+
+
 def evaluate(item, d):
     """Return (keep: bool, reasons_rejected: list, flags: list)."""
     reject, flags = [], []
@@ -248,11 +260,16 @@ def evaluate(item, d):
     elif d["sqft"] is None:
         flags.append("sq ft not listed")
 
-    # Laundry (in-unit is a must-have)
+    # Laundry: in-unit is a must-have, unless the unit is rent-controlled and
+    # criteria.json allows shared laundry for rent-controlled units.
+    rent_controlled = is_rent_controlled(text)
     if any(k in text for k in IN_UNIT):
         pass
     elif any(k in text for k in SHARED_LAUNDRY):
-        reject.append("shared laundry")
+        if rent_controlled and CRITERIA.get("shared_laundry_ok_if_rent_controlled"):
+            flags.append("near-miss: shared laundry (rent-controlled)")
+        else:
+            reject.append("shared laundry")
     else:
         flags.append("laundry unclear")
 
@@ -271,7 +288,7 @@ def evaluate(item, d):
     # Nice-to-haves / context
     if "dishwasher" not in text:
         flags.append("no dishwasher mentioned")
-    if "rent ordinance" in text or "rent control" in text or "rent-controlled" in text:
+    if rent_controlled:
         flags.append("rent-controlled ✅")
     if price and price > TARGET_PRICE:
         flags.append(f"over ${TARGET_PRICE:,} target")

@@ -84,8 +84,12 @@ def evaluate(d):
     low, reject, flags = d["low"], [], []
     if d["sqft"] and d["sqft"] < C["min_sqft"]:
         reject.append(f"{d['sqft']} sq ft")
+    rc = cw.is_rent_controlled(low)
     if "washer/dryer in apartment" not in low and not any(k in low for k in cw.IN_UNIT):
-        reject.append("no in-unit laundry")
+        if rc and C.get("shared_laundry_ok_if_rent_controlled") and "washer/dryer in building" in low:
+            flags.append("near-miss: shared laundry (rent-controlled)")
+        else:
+            reject.append("no in-unit laundry")
     if "street parking only" in low or "parking" not in low:
         reject.append("no parking")
     nope = [p for p in cw.REJECT_PHRASES if p in low]
@@ -93,7 +97,7 @@ def evaluate(d):
         reject.append("dealbreaker: " + ", ".join(nope[:3]))
     if "dishwasher" not in low:
         flags.append("no dishwasher")
-    if "rent controlled" in low:
+    if rc:
         flags.append("rent-controlled ✅")
     return reject, flags
 
@@ -149,8 +153,11 @@ def main():
         if price > C["target_price"]:
             flags.append(f"over ${C['target_price']:,} target")
         size = f"{d['sqft']} sq ft" if d["sqft"] else "size n/a"
+        laundry = ("shared laundry" if any("shared laundry" in f for f in flags)
+                   else "✓ in-unit W/D")
         msg = (f"${price:,} · {beds} bd · {size} · {u.get('neightborhood')}\n"
-               f"✓ in-unit W/D · parking listed" + (" · " + " · ".join(flags) if flags else "")
+               + laundry + " · parking listed"
+               + (" · " + " · ".join(flags) if flags else "")
                + "\nRentSFNow (landlord's own site)")
         print(f"+ MATCH: {u['post_title']} | ${price:,} | {url}")
         cw.send(args, topic, u["post_title"], msg, url, tags=["house"])

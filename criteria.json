@@ -40,8 +40,8 @@
     ]
   ],
   "must_have": [
-    "in-unit washer/dryer",
-    "real parking (garage, off-street, assigned; extra fee OK)"
+    "real parking (garage, off-street, assigned; extra fee OK)",
+    "in-unit washer/dryer — EXCEPT a rent-controlled unit with laundry in the building is acceptable (tag it 'near-miss: shared laundry')"
   ],
   "nice_to_have": [
     "dishwasher",
@@ -61,5 +61,7 @@
   "notes": [],
   "reject_phrases": [],
   "_reject_phrases": "Exact phrases (lowercase). A post containing any is rejected by the scripts and by Claude.",
-  "_dealbreakers": "Plain-English rules for Claude to judge (e.g. 'no units on Geary or Lombard'). Scripts can't check these; Claude's hourly check and report do."
+  "_dealbreakers": "Plain-English rules for Claude to judge (e.g. 'no units on Geary or Lombard'). Scripts can't check these; Claude's hourly check and report do.",
+  "shared_laundry_ok_if_rent_controlled": true,
+  "_shared_laundry_ok_if_rent_controlled": "Luke (Nov 15): would consider shared/in-building laundry if the unit is rent-controlled (SF Rent Ordinance / built before mid-1979). Push these, tagged near-miss."
 }
