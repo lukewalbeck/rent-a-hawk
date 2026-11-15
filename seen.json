@@ -1,5 +1,13 @@
 {
  "blocked_alerted": false,
+ "email": {
+  "addrs": {},
+  "auth_alerted": false,
+  "listings": {},
+  "msgs": {
+   "<C4.50.10412.CA996FA6@i-0963019fe97acd848.mta2vrest.sd.prd.sparkpost>": "2026-11-15T03:15:24+00:00"
+  }
+ },
  "fail_streak": 0,
  "seen": {
   "15ZX7a67DS3RnuJadRgVfX": "2026-11-13T15:54:27+00:00",
@@ -527,6 +535,7 @@
   "vs49kkABPbHMtaFbZRviLi": "2026-11-14T16:30:23+00:00",
   "vvMU9fFDdt7Stif9EXptmM": "2026-11-14T02:30:59+00:00",
   "vvjzjLLBm4HCijdHwT83Vo": "2026-11-14T02:15:17+00:00",
+  "vws36nuf7n3TXyhRb6RBTC": "2026-11-15T03:15:19+00:00",
   "vxovqLYFtJCmgy7bStZGfS": "2026-11-14T02:15:17+00:00",
   "vxqL7KvYfFJmftx2CjVg4M": "2026-11-14T02:46:47+00:00",
   "w4FaxVTDeXak99Nv3cKEU7": "2026-11-14T02:15:17+00:00",
