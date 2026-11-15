@@ -281,7 +281,7 @@ def main():
             title = li["address"] or f"New {site_of(li['url'])} listing"
             cw.send(args, topic, title, body, url=li["url"], tags=["house"], priority=4)
             sent += 1
-            print(f"    + MATCH: {title}")
+            print(f"    + MATCH: {title} | {li['price'] or '?'} | {li['url']}")
         est["msgs"][mid] = cw.now_iso()
 
     M.logout()

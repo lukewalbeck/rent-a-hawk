@@ -452,7 +452,7 @@ def main():
         scammy = any("possible scam" in f for f in flags)
         send(args, topic, it["title"] or d["header"], msg, url=it["url"],
              tags=["warning"] if scammy else ["house"], priority=3 if scammy else 4)
-        print(f"  + MATCH: {it['title']}")
+        print(f"  + MATCH: {it['title']} | {price or '?'} | {it['url']}")
 
     print(f"Done. {matches} match(es) sent.")
     if not args.dry_run:
