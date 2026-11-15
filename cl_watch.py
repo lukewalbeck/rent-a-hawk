@@ -50,6 +50,7 @@ MIN_SQFT = CRITERIA["min_sqft"]           # reject if listed smaller; flag if no
 NEIGHBORHOODS = CRITERIA["neighborhoods"]  # matched against label, title, opening text
 AREA_BOXES = [tuple(b) for b in CRITERIA["area_boxes"]]  # (lat_min, lat_max, lon_min, lon_max)
 REJECT_PHRASES = [p.lower() for p in CRITERIA.get("reject_phrases", [])]
+EXCLUDE_HOODS = [h.lower() for h in CRITERIA.get("exclude_neighborhoods", [])]
 GENERIC_HOODS = {"", "san francisco", "sf", "city of san francisco", "san francisco, ca"}
 
 ALERT_AFTER_FAILURES = 4    # consecutive blocked runs (~1 hour) before alerting
@@ -285,11 +286,24 @@ def evaluate(item, d):
     else:
         reject.append(f"neighborhood '{hood}'")
 
+    # Explicitly excluded neighborhoods (e.g. Nob Hill), unless a target one is named too.
+    label_title = (hood + " " + item.get("title", "") + " " + d["header"]).lower()
+    bad = [x for x in EXCLUDE_HOODS if x in label_title]
+    if bad and not any(n in label_title for n in NEIGHBORHOODS):
+        reject.append(f"excluded neighborhood ({bad[0]})")
+
     # Size
+    head = (item.get("title", "") + " " + d["header"]).lower()
+    beds = d["beds"]
+    if re.search(r"\b(junior|jr\.?)\s*(1|one)", head) or "studio" in head:
+        reject.append("junior 1BR / studio")
     if d["sqft"] is not None and d["sqft"] < MIN_SQFT:
         reject.append(f"{d['sqft']} sq ft")
     elif d["sqft"] is None:
-        flags.append("sq ft not listed")
+        if CRITERIA.get("one_br_needs_sqft") and (beds is None or beds <= 1):
+            reject.append("1BR with no size listed")
+        else:
+            flags.append("sq ft not listed")
 
     # Laundry: in-unit is a must-have, unless the unit is rent-controlled and
     # criteria.json allows shared laundry for rent-controlled units.
@@ -462,7 +476,7 @@ def main():
         h = it.get("hood", "").strip()
         # Only skip clearly out-of-area labels ("oakland, ca", "mission district").
         # Vague SF labels like "richmond district" go on to the map-pin check.
-        vague = any(v in h for v in ("richmond", "pacific", "presidio", "heights", "hill"))
+        vague = any(v in h for v in ("richmond", "pacific", "presidio", "heights"))
         if h and h not in GENERIC_HOODS and not vague and not any(n in h for n in NEIGHBORHOODS):
             state["seen"][listing_key(it["url"])] = now_iso()
             print(f"  - skip (neighborhood '{h}'): {it['title']}")

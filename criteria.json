@@ -30,7 +30,13 @@
       37.785,
       37.809,
       -122.452,
-      -122.404
+      -122.4225
+    ],
+    [
+      37.796,
+      37.809,
+      -122.4225,
+      -122.402
     ],
     [
       37.772,
@@ -63,5 +69,28 @@
   "_reject_phrases": "Exact phrases (lowercase). A post containing any is rejected by the scripts and by Claude.",
   "_dealbreakers": "Plain-English rules for Claude to judge (e.g. 'no units on Geary or Lombard'). Scripts can't check these; Claude's hourly check and report do.",
   "shared_laundry_ok_if_rent_controlled": true,
-  "_shared_laundry_ok_if_rent_controlled": "Luke (Nov 15): would consider shared/in-building laundry if the unit is rent-controlled (SF Rent Ordinance / built before mid-1979). Push these, tagged near-miss."
+  "_shared_laundry_ok_if_rent_controlled": "Luke (Nov 15): would consider shared/in-building laundry if the unit is rent-controlled (SF Rent Ordinance / built before mid-1979). Push these, tagged near-miss.",
+  "_area_boxes": "Map-pin boxes [lat_min, lat_max, lon_min, lon_max]: Marina/Cow Hollow/Pac Hts (west of Van Ness); Russian Hill/North Beach/Telegraph Hill (north of Broadway, so Nob Hill is out); Inner Richmond/Laurel Hts/Presidio Hts.",
+  "exclude_neighborhoods": [
+    "nob hill",
+    "lower nob",
+    "tenderloin",
+    "polk gulch",
+    "union square",
+    "downtown",
+    "financial district",
+    "fidi",
+    "chinatown",
+    "soma",
+    "civic center",
+    "van ness",
+    "outer richmond",
+    "central richmond",
+    "japantown",
+    "western addition",
+    "nopa"
+  ],
+  "_exclude_neighborhoods": "Luke (Nov 15): Craigslist was pushing Lower Nob Hill. Reject posts whose neighborhood label or title names one of these, unless it also names a target neighborhood.",
+  "one_br_needs_sqft": true,
+  "_one_br_needs_sqft": "Luke (Nov 15): too many small places. 1BRs must state 750+ sq ft; junior 1BRs and studios are out. 2BRs with no size listed still pass."
 }
