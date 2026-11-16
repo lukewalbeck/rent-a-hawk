@@ -63,12 +63,20 @@
     "1": 3800,
     "2": 4600
   },
-  "dealbreakers": [],
+  "dealbreakers": [
+    "No Presidio Residences / Baker Beach / inner-Presidio housing (Nov 16): too hard to commute to 525 Market. Presidio HEIGHTS (the neighborhood south of the park) is still fine."
+  ],
   "notes": [
     "Already reviewed & passed (Nov 15): 3150 Franklin #03 (Veritas, $5,495 + $400 parking, shared laundry). Don't push it again under any address/title."
   ],
   "reject_phrases": [
-    "3150 franklin"
+    "3150 franklin",
+    "presidio residences",
+    "baker beach",
+    "pershing dr",
+    "stilwell r",
+    "brooks st",
+    "baker ct"
   ],
   "_reject_phrases": "Exact phrases (lowercase). A post containing any is rejected by the scripts and by Claude.",
   "_dealbreakers": "Plain-English rules for Claude to judge (e.g. 'no units on Geary or Lombard'). Scripts can't check these; Claude's hourly check and report do.",
@@ -92,7 +100,10 @@
     "central richmond",
     "japantown",
     "western addition",
-    "nopa"
+    "nopa",
+    "baker beach",
+    "sea cliff",
+    "seacliff"
   ],
   "_exclude_neighborhoods": "Luke (Nov 15): Craigslist was pushing Lower Nob Hill. Reject posts whose neighborhood label or title names one of these, unless it also names a target neighborhood.",
   "one_br_needs_sqft": true,
