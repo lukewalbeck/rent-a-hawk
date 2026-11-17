@@ -310,7 +310,7 @@
  "fail_streak": 0,
  "rsfn": {
   "alerted": false,
-  "fail_streak": 0,
+  "fail_streak": 1,
   "seen": {
    "https://www.rentsfnow.com/apartments/rental/1008-larkin-310": "1545",
    "https://www.rentsfnow.com/apartments/rental/1025-sutter-208": "3695",
