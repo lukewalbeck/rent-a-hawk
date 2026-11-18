@@ -7,6 +7,7 @@ for u in ["https://www.zumper.com/apartments-for-rent/san-francisco-ca/1,2-beds/
         r=s.get(u,headers=H,timeout=25)
         t=r.text
         print("URL",u,"status",r.status_code,"len",len(t))
+        print("BODY",t[:1500].replace("\n"," "))
         print(" cf-challenge" if "cf-chl" in t or "Just a moment" in t else " no-cf-challenge")
         for k in ["__NEXT_DATA__","__PRELOADED_STATE__","window.__","listables","\"lat\"","min_price","\"address\"","application/ld+json"]:
             print("  ",k,t.count(k))
