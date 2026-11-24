@@ -1,10 +1,8 @@
 name: craigslist-watch
 # (also checks Zillow/Trulia alert emails)
+# Triggered only by cron-job.org (workflow_dispatch). The GitHub schedule was removed to save Actions minutes.
 
 on:
-  schedule:
-    # Every 20 min (odd minutes avoid GitHub congestion), ~6am–11pm Pacific (times are UTC). GitHub may delay runs a few minutes.
-    - cron: "8,28,48 0-7,14-23 * * *"
   workflow_dispatch:
     inputs:
       mode:
