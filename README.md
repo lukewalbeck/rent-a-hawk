@@ -30,14 +30,14 @@ mentioned · rent-controlled ✅ · sq ft / laundry / parking unclear · ⚠️ 
 ## Setup (about 10 minutes, from a computer)
 
 1. **Phone:** install **ntfy** from the App Store. Tap **+** and subscribe to a topic with a
-   hard-to-guess name, e.g. `walbeck_rent_a_hawk`. (Anyone who knows the name can read it.)
+   long random name (e.g. `rah-` plus 16 random letters/numbers). (Anyone who knows the name can read it.)
 2. **GitHub:** create a new **private** repo (`rent-a-hawk`) and upload these files,
    keeping the `.github/workflows/watch.yml` path:
    ```bash
    cd rent-a-hawk
    git init && git add . && git commit -m "Craigslist watcher"
    git branch -M main
-   git remote add origin git@github.com:lukewalbeck/rent-a-hawk.git
+   git remote add origin git@github.com:<you>/rent-a-hawk.git
    git push -u origin main
    ```
 3. **Secret:** repo **Settings → Secrets and variables → Actions → New repository secret**
@@ -56,7 +56,7 @@ Edit the block at the top of `cl_watch.py`: `max_price`, `TARGET_PRICE`, `MIN_SQ
 ## Cost / limits
 
 - Private repos get 2,000 free Actions minutes/month; this uses about 1,600. A **public**
-  repo has no limit (the only thing visible would be `seen.json`; your topic stays secret).
+  repo has no limit (code, criteria and seen/pushed listings become visible; the topic and Gmail password stay secret).
 - GitHub's scheduler can run a few minutes late at busy times.
 - Times are in UTC, so in summer (daylight time) the window shifts an hour later.
 

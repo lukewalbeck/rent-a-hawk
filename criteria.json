@@ -68,8 +68,8 @@
   ],
   "notes": [
     "Already reviewed & passed (Nov 15): 3150 Franklin #03 (Veritas, $5,495 + $400 parking, shared laundry). Don't push it again under any address/title.",
-    "Dropped by Luke (Nov 17): 3120 Franklin, 1880 Steiner, 3322 Buchanan (Magnolia Place). Don't push or report them again.",
-    "SCAM (Nov 21): 1166 Green St 2BR $5,170 on Zumper -> leasehub.app page -> 'owner' Chandru Lakhani via vanguardprivateproperty@gmail.com. Never push it or anything from those names."
+    "Dropped by 3120 Franklin, 1880 Steiner, 3322 Buchanan (Magnolia Place). Don't push or report them again.",
+    "SCAM (Nov 21): 1166 Green St 2BR $5,170 on Zumper -> leasehub.app page -> fake 'owner' emailing from a Gmail address. Never push it or anything from those names."
   ],
   "reject_phrases": [
     "3150 franklin",
@@ -91,7 +91,7 @@
   "_reject_phrases": "Exact phrases (lowercase). A post containing any is rejected by the scripts and by Claude.",
   "_dealbreakers": "Plain-English rules for Claude to judge (e.g. 'no units on Geary or Lombard'). Scripts can't check these; Claude's hourly check and report do.",
   "shared_laundry_ok_if_rent_controlled": true,
-  "_shared_laundry_ok_if_rent_controlled": "Luke (Nov 15): would consider shared/in-building laundry if the unit is rent-controlled (SF Rent Ordinance / built before mid-1979). Push these, tagged near-miss.",
+  "_shared_laundry_ok_if_rent_controlled": "(Nov 15) would consider shared/in-building laundry if the unit is rent-controlled (SF Rent Ordinance / built before mid-1979). Push these, tagged near-miss.",
   "_area_boxes": "Map-pin boxes [lat_min, lat_max, lon_min, lon_max]: Marina/Cow Hollow/Pac Hts (west of Van Ness); Russian Hill/North Beach/Telegraph Hill (north of Broadway, so Nob Hill is out); Inner Richmond/Laurel Hts/Presidio Hts.",
   "exclude_neighborhoods": [
     "nob hill",
@@ -115,7 +115,7 @@
     "sea cliff",
     "seacliff"
   ],
-  "_exclude_neighborhoods": "Luke (Nov 15): Craigslist was pushing Lower Nob Hill. Reject posts whose neighborhood label or title names one of these, unless it also names a target neighborhood.",
+  "_exclude_neighborhoods": "(Nov 15) Craigslist was pushing Lower Nob Hill. Reject posts whose neighborhood label or title names one of these, unless it also names a target neighborhood.",
   "one_br_needs_sqft": true,
-  "_one_br_needs_sqft": "Luke (Nov 15): too many small places. 1BRs must state 750+ sq ft; junior 1BRs and studios are out. 2BRs with no size listed still pass."
+  "_one_br_needs_sqft": "(Nov 15) too many small places. 1BRs must state 750+ sq ft; junior 1BRs and studios are out. 2BRs with no size listed still pass."
 }
