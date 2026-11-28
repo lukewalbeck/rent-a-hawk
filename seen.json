@@ -315,6 +315,7 @@
    "https://redfin.com/CA/San-Francisco/Columbus-Residence/apartment/196663834": "2026-11-16T15:45:36+00:00",
    "https://redfin.com/CA/San-Francisco/Crystal-Tower-Apartments/apartment/1881668": "2026-11-21T19:15:37+00:00",
    "https://redfin.com/CA/San-Francisco/Delphine-on-Diamond/apartment/1258049": "2026-11-21T00:30:36+00:00",
+   "https://redfin.com/CA/San-Francisco/Edgewater/apartment/21967232": "2026-11-28T15:30:28+00:00",
    "https://redfin.com/CA/San-Francisco/Fillmore-Golden-Gate-Associates/apartment/185508649": "2026-11-24T20:30:30+00:00",
    "https://redfin.com/CA/San-Francisco/Glasdore-Lofts/apartment/179448353": "2026-11-15T14:45:28+00:00",
    "https://redfin.com/CA/San-Francisco/HQ/apartment/184932892": "2026-11-15T14:45:28+00:00",
@@ -545,6 +546,7 @@
    "<010101a21d95d8a4-3d7276b4-af37-4d66-a368-5ea84b280e18-000000@us-west-2.amazonses.com>": "2026-11-27T15:30:37+00:00",
    "<010101a21dce0330-5692c4f0-eea9-4ade-b508-8d4ddf2ce4bb-000000@us-west-2.amazonses.com>": "2026-11-27T16:30:40+00:00",
    "<010101a21e65a7ae-87ff5a7f-5581-4e92-ba82-b6d5c8c5c246-000000@us-west-2.amazonses.com>": "2026-11-27T19:15:28+00:00",
+   "<010101a222bc7b7d-6a015a3d-13b0-4034-bf06-af9f6c970751-000000@us-west-2.amazonses.com>": "2026-11-28T15:30:28+00:00",
    "<02.72.42317.615FCFA6@i-0c709fa6cdf8a66a7.mta2vrest.sd.prd.sparkpost>": "2026-11-18T00:45:26+00:00",
    "<02.FF.56759.8C27AFA6@i-090c3f37dff81b696.mta2vrest.sd.prd.sparkpost>": "2026-11-16T03:16:12+00:00",
    "<06.2F.17606.85CB9FA6@i-0d75052724a39f4db.mta2vrest.sd.prd.sparkpost>": "2026-11-15T14:15:22+00:00",
@@ -645,7 +647,7 @@
    "<Y4L-vNB9QAenX3refuJLRg@geopod-ismtpd-37>": "2026-11-21T00:00:30+00:00"
   }
  },
- "fail_streak": 1,
+ "fail_streak": 0,
  "rsfn": {
   "alerted": false,
   "fail_streak": 0,
